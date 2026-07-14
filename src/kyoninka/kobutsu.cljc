@@ -52,9 +52,14 @@
    :procedure/steps
    [{:step/id :verify-current-rules :step/order 1 :step/requires-human true
      :step/title "管轄警察署（丸の内署 防犯係）へ事前相談・最新様式と手数料の確認"
-     :step/detail "所在地の管轄確認・営業所の実体要件（オフィス契約形態）・URL 届出の要領を確認する。"}
+     :step/detail "所在地の管轄確認・営業所の実体要件（オフィス契約形態）・URL 届出の要領を確認する。"
+     :step/errand {:kind :verify-authority-info :draft-via :tayori
+                   :evidence-schema {:authority :string :verified :map
+                                     :source :string :date :iso-date}}}
     {:step/id :collect-documents :step/order 2 :step/requires-human false
-     :step/title "申請書類一式の収集（役員全員分の本籍地書類は取り寄せに時間がかかるので先行）"}
+     :step/title "申請書類一式の収集（役員全員分の本籍地書類は取り寄せに時間がかかるので先行）"
+     :step/errand {:kind :collect-documents :draft-via nil
+                   :evidence-schema {:doc :keyword :obtained-date :iso-date}}}
     {:step/id :appoint-manager :step/order 3 :step/requires-human true
      :step/title "営業所管理者の選任"}
     {:step/id :submit :step/order 4 :step/requires-human true

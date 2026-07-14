@@ -60,15 +60,26 @@
    :procedure/steps
    [{:step/id :verify-current-rules :step/order 1 :step/requires-human true
      :step/title "最新の手数料・様式・受付方法を東京都環境局で確認"
-     :step/detail "収録値は標準値。申請の手引き最新版を取得し、様式改定・電子申請可否を確認する。"}
+     :step/detail "収録値は標準値。申請の手引き最新版を取得し、様式改定・電子申請可否を確認する。"
+     :step/errand {:kind :verify-authority-info :draft-via :tayori
+                   :evidence-schema {:authority :string :verified :map
+                                     :source :string :date :iso-date}}}
     {:step/id :resolve-legal-questions :step/order 2 :step/requires-human true
      :step/title "事業スキームの法的整理（行政書士相談）"
-     :step/detail ":legal-questions を行政書士に諮り、宅配回収 ITAD で本許可が必要なスキームかを確定させる。"}
+     :step/detail ":legal-questions を行政書士に諮り、宅配回収 ITAD で本許可が必要なスキームかを確定させる。"
+     :step/errand {:kind :consult-professional :draft-via :tayori
+                   :evidence-schema {:office :string :date :iso-date
+                                     :resolutions :map}}}
     {:step/id :book-jw-course :step/order 3 :step/requires-human true
      :step/title "JWセンター講習会（収集・運搬課程 新規）の受講予約と受講"
-     :step/detail "受講者 = 代表者または役員。人気日程は埋まるため最優先で予約。修了試験合格まで。"}
+     :step/detail "受講者 = 代表者または役員。人気日程は埋まるため最優先で予約。修了試験合格まで。"
+     :step/errand {:kind :book-course :draft-via :koyomi
+                   :evidence-schema {:provider :keyword :course :string :date :iso-date
+                                     :attendee :string :confirmation-no :string}}}
     {:step/id :collect-documents :step/order 4 :step/requires-human false
-     :step/title "申請書類一式の収集（:procedure/documents のチェックリスト消化）"}
+     :step/title "申請書類一式の収集（:procedure/documents のチェックリスト消化）"
+     :step/errand {:kind :collect-documents :draft-via nil
+                   :evidence-schema {:doc :keyword :obtained-date :iso-date}}}
     {:step/id :prepare-business-plan :step/order 5 :step/requires-human false
      :step/title "事業計画書の作成（品目・数量・車両・容器・駐車場）"}
     {:step/id :submit :step/order 6 :step/requires-human true
