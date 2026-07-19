@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test and Kotoba conformance (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: DeLaGuardo/setup-clojure@13.1
+        with:
+          cli: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Test
+        run: clojure -M:test
+      - name: Lint
+        run: clojure -M:lint
+      - name: Compile Kotoba Web and Wasm
+        run: |
+          mkdir -p target/kotoba
+          clojure -M:kotoba compile test/kyoninka/human_gate_conformance.kotoba \
+            --source-path src --target js-browser --output target/kotoba/human-gate.mjs
+          clojure -M:kotoba compile test/kyoninka/human_gate_conformance.kotoba \
+            --source-path src --target wasm32-browser --output target/kotoba/human-gate.wasm
+      - name: Execute complete transition matrix
+        run: |
+          compiler_src="$(clojure -Spath -M:kotoba | tr ':' '\n' | grep '/compiler/' | head -1)"
+          node scripts/verify-kotoba-human-gate.mjs target/kotoba/human-gate.mjs \
+            target/kotoba/human-gate.wasm "$(dirname "$compiler_src")/runtime/browser-host.mjs"

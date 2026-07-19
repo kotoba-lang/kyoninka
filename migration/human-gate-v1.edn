@@ -1,0 +1,16 @@
+{:migration/id :kyoninka/human-gate-v1
+ :status :candidate
+ :source-of-truth {:legacy "src/kyoninka/schema.cljc"
+                   :kernel "src/kyoninka/human_gate.kotoba"}
+ :domain {:statuses [:not-started :preparing :ready-to-submit :submitted
+                     :under-review :granted :rejected :withdrawn]
+          :encoding :closed-i64-enum
+          :valid-transition-pairs 64 :valid-approval-cases 128
+          :verified-boundary-cases 576
+          :invalid-transition-policy :deny
+          :human-transition-policy :deny-without-explicit-approval}
+ :excluded [:procedure-data :legal-advice :authority-data :fees :documents
+            :steps :case-storage :event-ledger :external-actions]
+ :evidence {:cljc-oracle "test/kyoninka/human_gate_matrix_test.clj"
+            :kotoba-conformance "test/kyoninka/human_gate_conformance.kotoba"
+            :web-wasm-verifier "scripts/verify-kotoba-human-gate.mjs"}}
