@@ -1,5 +1,11 @@
 # kyoninka（許認可）
 
+The closed eight-status transition and explicit human-approval gate also has a
+native `.kotoba` kernel. It compiles to restricted JavaScript and Wasm without
+a JVM runtime. Procedure text, legal questions, current authority information,
+fees, documents, persistence, and external actions remain host-owned CLJC data
+and code.
+
 日本の許認可手続きを **procedure-as-data**（Datomic 互換 EDN + 純関数 + 状態機械 +
 append-only 台帳イベント）で表すライブラリ。ADR-2607141620（com-junkawasaki/root）。
 

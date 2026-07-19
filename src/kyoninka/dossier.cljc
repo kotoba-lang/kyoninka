@@ -118,7 +118,11 @@
        "| 法人番号 | " (placeholder corporate-number) " |\n"
        "| 代表者 | " representative-title " " representative " |\n"
        "| 本店所在地 | " address " |\n| 電話番号 | " (placeholder phone) " |\n"
-       "| 資本金 | " (if (number? capital-jpy) (str (.toLocaleString capital-jpy "ja-JP") "円") (placeholder capital-jpy)) " |\n"
+       "| 資本金 | " (if (number? capital-jpy)
+                       (str #?(:clj (format "%,d" capital-jpy)
+                               :cljs (.toLocaleString capital-jpy "ja-JP"))
+                            "円")
+                       (placeholder capital-jpy)) " |\n"
        "| 設立 | " (placeholder established) " |\n\n"
        "## 役員\n\n| 地位 | 氏名 | 生年月日 | 住所 |\n|---|---|---|---|\n"
        (str/join "\n" (map (fn [o] (str "| " (:role o) " | " (placeholder (:name o)) " | "
