@@ -10,9 +10,14 @@
   {:procedure/id :kobutsu-marunouchi
    :procedure/name "古物商許可（東京都公安委員会・営業所: 千代田区丸の内）"
    :procedure/law "古物営業法 第3条"
+   ;; **法域。** 以前は暗黙に日本だった。古物商許可は都道府県公安委員会の許可（法域は日本、窓口が管轄警察署）。
+   :procedure/jurisdiction "JPN"
    :procedure/authority "東京都公安委員会"
    :procedure/window "営業所所在地の管轄警察署 生活安全課 防犯係（丸の内警察署。事前電話予約が通例）"
-   :procedure/fee {:amount-jpy 19000
+   :procedure/fee {:amount 19000
+                   ;; **通貨を型に焼かない。** 以前の schema は :procedure/fee-jpy で
+                   ;; JPY を属性名に持っており、日本以外を収録した瞬間に嘘になった。
+                   :currency "JPY"
                    :kind :新規許可申請手数料
                    :verify (schema/unverified "警視庁の公式ページ/管轄警察署で最新額を確認")}
    :procedure/standard-period-days {:value 40

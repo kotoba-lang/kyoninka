@@ -10,9 +10,14 @@
   {:procedure/id :sanpai-shuun-tokyo
    :procedure/name "産業廃棄物収集運搬業許可（東京都・積替え保管なし）"
    :procedure/law "廃棄物の処理及び清掃に関する法律（廃棄物処理法）第14条第1項"
+   ;; **法域。** 以前は暗黙に日本だった。産業廃棄物収集運搬業許可は都道府県知事の許可（法域は日本、窓口が東京都）。
+   :procedure/jurisdiction "JPN"
    :procedure/authority "東京都知事（環境局 資源循環推進部）"
    :procedure/window "東京都環境局（申請は郵送/窓口。最新の受付方法は要確認）"
-   :procedure/fee {:amount-jpy 81000
+   :procedure/fee {:amount 81000
+                   ;; **通貨を型に焼かない。** 以前の schema は :procedure/fee-jpy で
+                   ;; JPY を属性名に持っており、日本以外を収録した瞬間に嘘になった。
+                   :currency "JPY"
                    :kind :新規許可申請手数料
                    :verify (schema/unverified "東京都環境局の公式ページ/手数料条例で最新額を確認")}
    :procedure/standard-period-days {:value 60
