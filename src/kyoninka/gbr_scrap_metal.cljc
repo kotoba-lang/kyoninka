@@ -70,14 +70,407 @@
    ;; **:amount を書かない。** Schedule 1 para 6(1) は「An application must be
    ;; accompanied by a fee set by the authority」で、額を決めるのは自治体。
    ;; 代表額を 1 つ書けば、それ以外の全自治体で嘘になる。通貨だけは確定するので残す。
-   :procedure/fee {;; **:amount を書かない。** 額は council が決め、実測で
-                   ;; £181〜£804.78 と 4 倍以上開く。代表額はどれを選んでも
-                   ;; 残り全部で嘘になる。:verify が「最新額を確認せよ」ではなく
-                   ;; 「そもそも額はここでは決まらない」を表している。
+   :procedure/fee {;; **:amount を書かない。** 額は council が決めるので全国値が存在しない。
+                   ;; 代表額はどれを選んでも残り全部で嘘になる。:verify が
+                   ;; 「最新額を確認せよ」ではなく「そもそも額はここでは決まらない」を表す。
+                   ;; 実際に引いた額は :procedure/fee-observations にある。
                    :currency "GBP"
                    :minor-unit 100
                    :kind :licence-application-fee-set-by-authority
-                   :verify (schema/unverified "手数料は council ごとに異なる（Schedule 1 para 6(1)）。申請先 council の licensing fee 表で site / collector・新規 / 更新の別に実額を確認する。実測レンジ: site 新規 £181（Leeds）/ £581（Buckinghamshire）/ £597.30（Peterborough）/ £804.78（Kirklees）")}
+                   :set-by {:level :sub-national
+                            :body "各 council（licensing authority。二層制の shire area では county ではなく district）"
+                            :basis "Scrap Metal Dealers Act 2013 Schedule 1 para 6(1)（licensing authority が費用回収の観点から額を定める）"}
+                   :verify (schema/unverified "手数料は council ごとに異なる（Schedule 1 para 6(1)）。申請先 council の licensing fee 表で site / collector・新規 / 更新の別に実額を確認する。14 council を実測した結果は :procedure/fee-observations にあるが、**その min/max は法定の幅ではなく標本の端**であって、外側の額が無い証拠にはならない")}
+
+   ;; 実測 14 council・38 観測（2026-08-07）。**この集合の min/max を制度の幅として
+   ;; 引用しないこと** —— site 新規は £235（Cheshire East）〜£1,089（Newham）の
+   ;; 4.6 倍、collector は £124〜£717 の 5.8 倍に開くが、それは「私が見た 14 council
+   ;; がその範囲だった」でしかない。SMDA は各 licensing authority に費用回収額を
+   ;; 自分で決めさせており、実際に計算方法が council ごとに大きく違う。
+   ;;
+   ;; **段階（:stage）は『ページ上の実際の表記』から決めた。** 6 council は
+   ;; Grant/Renewal を 1 額で示しており、これを :new と書くと「区別していない」
+   ;; という事実が消える。段階の表記が無い council は :unstated —— 更新額が
+   ;; 新規と同じだと推測しない（Sheffield は実際に別行で同額、Leeds は更新の方が高い）。
+   ;;
+   ;; **年度を書いている council は 14 中 2 つだけ**（Cornwall / Cheshire East）で、
+   ;; しかも Cornwall は同じ表で 2026-2027 と『Effective from 1st April 2025』が
+   ;; 矛盾している。残り 12 は年度不明であって「今年度」ではない。
+   ;;
+   ;; 到達できなかった 10 council の内訳は概ね HTTP 403 / bot 検出であって
+   ;; 額の非公表ではない（Manchester と Newport の 2 つだけが実際に非公表で、
+   ;; 申請者にメールで問い合わせさせる）。検索要約が出した Cardiff（2022-23）・
+   ;; Wiltshire（2020-21）・Swansea の 3 件は採らなかった —— **Swansea のものは
+   ;; そもそも SMDA ではなく Environment Agency の廃棄物運搬業登録料**で、
+   ;; 検索要約はこの 2 制度を取り違える（額は 1 桁違う）。
+   :procedure/fee-observations
+   [{:fee-observation/id "gbr-scrap-leeds-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Leeds City Council"
+     :fee-observation/licence-type :unspecified
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 18100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.leeds.gov.uk/licensing/other-licences/scrap-metal-dealer-registration"
+     :fee-observation/note "ページは取引種別だけで課金し site / collector を分けていない（表記は New application £181）。**この額を『site 免許の手数料』として引用しないこと** —— 表に無い区別を読み込むことになる"}
+    {:fee-observation/id "gbr-scrap-leeds-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Leeds City Council"
+     :fee-observation/licence-type :unspecified
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 18300
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.leeds.gov.uk/licensing/other-licences/scrap-metal-dealer-registration"
+     :fee-observation/note "表記は Renewal。更新 £183 が新規 £181 より高い —— 標本 14 council のうちここだけ"}
+    {:fee-observation/id "gbr-scrap-kirklees-site-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Kirklees Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 80478
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.kirklees.gov.uk/beta/licensing/apply-for-a-scrap-metal-dealer-collectors-licence.aspx"}
+    {:fee-observation/id "gbr-scrap-kirklees-site-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Kirklees Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 72513
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.kirklees.gov.uk/beta/licensing/apply-for-a-scrap-metal-dealer-collectors-licence.aspx"}
+    {:fee-observation/id "gbr-scrap-kirklees-collector-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Kirklees Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 46761
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.kirklees.gov.uk/beta/licensing/apply-for-a-scrap-metal-dealer-collectors-licence.aspx"}
+    {:fee-observation/id "gbr-scrap-kirklees-collector-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Kirklees Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 40902
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.kirklees.gov.uk/beta/licensing/apply-for-a-scrap-metal-dealer-collectors-licence.aspx"}
+    {:fee-observation/id "gbr-scrap-sheffield-site-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Sheffield City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 37100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.sheffield.gov.uk/business/licences-permits-registrations/scrap-metal-dealers-licence"
+     :fee-observation/note "新規と更新を別行で示した上で同額（£371 for a new site licence / £371 to renew）。**区別していないのではなく、区別した上で同額**"}
+    {:fee-observation/id "gbr-scrap-sheffield-site-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Sheffield City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 37100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.sheffield.gov.uk/business/licences-permits-registrations/scrap-metal-dealers-licence"}
+    {:fee-observation/id "gbr-scrap-sheffield-collector-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Sheffield City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 26800
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.sheffield.gov.uk/business/licences-permits-registrations/scrap-metal-dealers-licence"}
+    {:fee-observation/id "gbr-scrap-sheffield-collector-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Sheffield City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 26800
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.sheffield.gov.uk/business/licences-permits-registrations/scrap-metal-dealers-licence"}
+    {:fee-observation/id "gbr-scrap-bradford-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "City of Bradford Metropolitan District Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 42500
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.bradford.gov.uk/business/licensing/licensing-fees/"
+     :fee-observation/note "表記は Site Licence - Grant/Renewal で 1 額。新規と更新を区別していない"}
+    {:fee-observation/id "gbr-scrap-bradford-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "City of Bradford Metropolitan District Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 23500
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.bradford.gov.uk/business/licensing/licensing-fees/"
+     :fee-observation/note "表記は Collectors Licence - Grant/Renewal で 1 額"}
+    {:fee-observation/id "gbr-scrap-bucks-site-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Buckinghamshire Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 58100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.buckinghamshire.gov.uk/business/business-licences-and-permits/scrap-metal-licences/apply-for-a-scrap-metal-dealer-licence/"}
+    {:fee-observation/id "gbr-scrap-bucks-site-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Buckinghamshire Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 47100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.buckinghamshire.gov.uk/business/business-licences-and-permits/scrap-metal-licences/apply-for-a-scrap-metal-dealer-licence/"}
+    {:fee-observation/id "gbr-scrap-bucks-collector-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Buckinghamshire Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 35400
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.buckinghamshire.gov.uk/business/business-licences-and-permits/scrap-metal-licences/apply-for-a-scrap-metal-dealer-licence/"}
+    {:fee-observation/id "gbr-scrap-bucks-collector-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Buckinghamshire Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 26900
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.buckinghamshire.gov.uk/business/business-licences-and-permits/scrap-metal-licences/apply-for-a-scrap-metal-dealer-licence/"}
+    {:fee-observation/id "gbr-scrap-peterborough-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Peterborough City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 59730
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.peterborough.gov.uk/business/licences-and-permits/apply-for-a-licence/scrap-metal-dealer-licence"
+     :fee-observation/note "site の額は 1 つだけで、新規か更新かの表記が無い（更新の額は非公表）。variation £40 / replacement £25 は別"}
+    {:fee-observation/id "gbr-scrap-peterborough-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Peterborough City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 33110
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.peterborough.gov.uk/business/licences-and-permits/apply-for-a-licence/scrap-metal-dealer-licence"
+     :fee-observation/note "表記は mobile collector's licence。段階の表記が無い"}
+    {:fee-observation/id "gbr-scrap-bristol-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Bristol City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 77000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.bristol.gov.uk/business/licences-and-permits/other-licences-a-to-z/scrap-metal-dealer-licence"
+     :fee-observation/note "表記は Site Licence のみで段階が無い。更新者には新規申請書の提出を案内しており実質同額と読めるが、**ページがそう書いているわけではない**ので :unstated。追加 site は 1 件 £113"}
+    {:fee-observation/id "gbr-scrap-bristol-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Bristol City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 71700
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.bristol.gov.uk/business/licences-and-permits/other-licences-a-to-z/scrap-metal-dealer-licence"
+     :fee-observation/note "£717 は site の 93%。他の council では collector が site の約半額なので、この比だけ大きく外れる"}
+    {:fee-observation/id "gbr-scrap-cornwall-premises"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Cornwall Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 49000
+     :fee-observation/fee-year "2026-2027"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.cornwall.gov.uk/business-trading-and-licences/licences-and-street-trading/scrap-metal-dealers-registration/"
+     :fee-observation/note "表記は Grant / Renewal - Premises（Cornwall は site/collector でなく Premises/Person と呼ぶ）。**年度がページ内で矛盾**: 列見出しは Fee (2026-2027) だが表の注記は Effective from 1st April 2025"}
+    {:fee-observation/id "gbr-scrap-cornwall-person"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Cornwall Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 34000
+     :fee-observation/fee-year "2026-2027"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.cornwall.gov.uk/business-trading-and-licences/licences-and-street-trading/scrap-metal-dealers-registration/"
+     :fee-observation/note "表記は Grant / Renewal - Person。年度の矛盾は Premises 行と同じ"}
+    {:fee-observation/id "gbr-scrap-cheshire-east-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Cheshire East Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 23500
+     :fee-observation/fee-year "2026/2027"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.cheshireeast.gov.uk/business/environmental_health/fees_and_charges.aspx"
+     :fee-observation/note "標本中の最安。**データの誤りではない** —— 表の見出しが Scrap Metal dealers で、備考欄が Scrap Metal Dealers Act 2013 を引いていることを再取得して確認した。更新・変更の行は非公表"}
+    {:fee-observation/id "gbr-scrap-cheshire-east-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Cheshire East Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 12400
+     :fee-observation/fee-year "2026/2027"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.cheshireeast.gov.uk/business/environmental_health/fees_and_charges.aspx"
+     :fee-observation/note "£124 は標本中の最安で、Kirklees の collector の約 1/5"}
+    {:fee-observation/id "gbr-scrap-nottingham-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Nottingham City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 44800
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.nottinghamcity.gov.uk/information-for-business/business-information-and-support/business-and-trading-licences-and-permits/regulatory-fees/"
+     :fee-observation/note "表記は Site Licence のみ。更新の額は非公表"}
+    {:fee-observation/id "gbr-scrap-nottingham-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Nottingham City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 22400
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.nottinghamcity.gov.uk/information-for-business/business-information-and-support/business-and-trading-licences-and-permits/regulatory-fees/"
+     :fee-observation/note "表記は Collector Licence のみ。site のちょうど半額"}
+    {:fee-observation/id "gbr-scrap-croydon-site-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Croydon"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 64400
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.croydon.gov.uk/business-licences-and-tenders/licences-permits-and-registrations/licence-and-permit-fees/licence-and-permit-fees/all-other-licence-fees"}
+    {:fee-observation/id "gbr-scrap-croydon-site-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Croydon"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 52000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.croydon.gov.uk/business-licences-and-tenders/licences-permits-and-registrations/licence-and-permit-fees/licence-and-permit-fees/all-other-licence-fees"}
+    {:fee-observation/id "gbr-scrap-croydon-collector-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Croydon"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 44600
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.croydon.gov.uk/business-licences-and-tenders/licences-permits-and-registrations/licence-and-permit-fees/licence-and-permit-fees/all-other-licence-fees"}
+    {:fee-observation/id "gbr-scrap-croydon-collector-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Croydon"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 40400
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.croydon.gov.uk/business-licences-and-tenders/licences-permits-and-registrations/licence-and-permit-fees/licence-and-permit-fees/all-other-licence-fees"}
+    {:fee-observation/id "gbr-scrap-newham-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Newham"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 108900
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.newham.gov.uk/business-licensing-regulation/licences-%E2%80%93-scrap-metal-dealers"
+     :fee-observation/note "標本中の最高額（£1,089）。表記は Site licence のみで段階が無い"}
+    {:fee-observation/id "gbr-scrap-newham-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "London Borough of Newham"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :unstated
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 61050
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.newham.gov.uk/business-licensing-regulation/licences-%E2%80%93-scrap-metal-dealers"
+     :fee-observation/note "£610.50。collector から site への variation に £825 という別建ての額がある"}
+    {:fee-observation/id "gbr-scrap-chelmsford-site-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Chelmsford City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 43000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.chelmsford.gov.uk/business/licensing/find-a-licence/scrap-metal/"
+     :fee-observation/note "二層制の Essex では **county ではなく district が SMDA の licensing authority**"}
+    {:fee-observation/id "gbr-scrap-chelmsford-site-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Chelmsford City Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 27000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.chelmsford.gov.uk/business/licensing/find-a-licence/scrap-metal/"
+     :fee-observation/note "標本中で最も大きい更新割引（新規の 37% 引き）"}
+    {:fee-observation/id "gbr-scrap-chelmsford-collector-new"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Chelmsford City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :new
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 20000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.chelmsford.gov.uk/business/licensing/find-a-licence/scrap-metal/"}
+    {:fee-observation/id "gbr-scrap-chelmsford-collector-renewal"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Chelmsford City Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 17000
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.chelmsford.gov.uk/business/licensing/find-a-licence/scrap-metal/"}
+    {:fee-observation/id "gbr-scrap-wrexham-site"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Wrexham County Borough Council"
+     :fee-observation/licence-type :site
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 49500
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.wrexham.gov.uk/service/licensing/scrap-metal-dealers-licences"
+     :fee-observation/note "表記は new/renewal を 1 額にまとめている"}
+    {:fee-observation/id "gbr-scrap-wrexham-collector"
+     :fee-observation/procedure :gbr-scrap-metal
+     :fee-observation/authority "Wrexham County Borough Council"
+     :fee-observation/licence-type :collector
+     :fee-observation/stage :grant-or-renewal
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 23100
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.wrexham.gov.uk/service/licensing/scrap-metal-dealers-licences"
+     :fee-observation/note "同じく new/renewal で 1 額。variation £88"}]
    ;; **:value を書かない。** 法にも Home Office guidance にも決定期限が無く、
    ;; 公表するかどうかも council 次第。全国値を書く根拠が存在しない。
    :procedure/standard-period-days {:verify (schema/unverified "全国共通の標準処理期間は存在しない（法・Home Office guidance とも決定期限を定めていない）。申請先 council が service standard を公表しているか確認する。実測例: Leeds は『28 days of receipt』と公表、Peterborough / Buckinghamshire / Kirklees は未公表")}

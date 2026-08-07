@@ -27,13 +27,35 @@
   この手続きは**その 2 つをどちらも収録していない**ので、`schema/unverified` を
   呼ぶ箇所が無い。
 
-  - **手数料**: 連邦法は金額を定めない。州の Gebührenordnung が定め、しかも
-    定額でなく**幅**で示される（実測: Niedersachsen は AllGO Kostentarif 2.1.35 で
-    初回交付 平均 ca. 360 €、Berlin は 250–5,000 €、Hamburg は 50–1,000 €
-    ないし UmwGebO の最低 371 €）。`:procedure/fee` の `:amount` はスカラ 1 個
-    しか持てないので、どれを書いても残り 15 州について嘘になる。
-    → **省いた。** 観測した 3 州の値は `:procedure/legal-questions` の
-    `:land-gebuehren-und-praxis` に、どの州の話かを明記して保持する。
+  - **手数料**: 連邦法は金額を定めない。全国値が存在しないので `:amount` は
+    書けない（`:set-by :level` が `:sub-national`）。**16 州すべてを実測した
+    結果は `:procedure/fee-observations` にある**（2026-08-07、37 観測）。
+
+    以前ここには「州の Gebührenordnung が定め、しかも定額でなく**幅**で示される」
+    と書いていた。**16 州を数えたらこれは 11 州にしか当たらなかった。**
+    実際には 5 つの形がある —— 幅（11 州）／下限のみ上限なし（NI ≥160 €、
+    HH ≥371 €）／上限のみ下限なし（MV ≤5.500 €）／**額の定めが一切なし**
+    （NRW は純粋な時間手数料）／定額（HE 電子 800 € 紙 1.000 €、16 州で唯一）。
+    幅を既定の形として型に焼かなかったのはこのため。
+
+    以前記録していた 3 州の値のうち **2 件に誤りがあった**: Niedersachsen の
+    「AllGO 2.1.35 で平均 ca. 360 €」は数値としては実在するが**法的性格が違う**
+    —— 条文は「時間費用、ただし最低 160 €」で、360 € は所管庁 Merkblatt の
+    運用平均。Hamburg の「50–1,000 €」は §54 の値として裏付けが取れなかった
+    （確認できたのは UmwGebO の最低 371 €）。前者は `:source-kind` が
+    `:instrument` と `:practice` を分けることで両方保持している。
+
+    **州ごとの値の散らばりは幅ではない。** 11 州の法定幅を通覧すると下限 57–375 €、
+    上限 1.000–10.000 € に散らばるが、`57–10.000 €` のような合成値はどの州の
+    規則にも存在しないので作らない。同じ誤りは州内でも起きており、Sachsen では
+    一部の Landkreis ページが別々の Tarifstelle の下限と上限を跨いで
+    「100–6.000 €」と表示する（条文上そのような項目は無い）。
+
+    **§53 届出が「多くの州で無料」というのは誤りだった。** 無条件に無料なのは
+    Bremen 1 州のみで、13 州は有料。条件付き無料の 2 州（HE / NI）も、無料は
+    §53 という手続にではなく**電子経路に**付いている（HE の条文は
+    「elektronischen Anzeige …wird keine Gebühr erhoben」で紙は 50 €）。
+    それが `:fee-observation/channel` を持つ理由。
   - **標準処理期間**: ドイツにこの概念は無い。あるのは上記 3 か月の
     Genehmigungsfiktion で、これは『たいていこれくらいで返ってくる』ではなく
     『これを過ぎたら許可されたことになる』という別の法的効果。しかも法文の単位は
@@ -45,7 +67,7 @@
   収録した値はすべて 2026-08-07 に一次資料（gesetze-im-internet.de の
   KrWG / AbfAEV / AVV / VwVfG、および州所管庁の公式ページ・Merkblatt）で確認した。
   裏の取れなかった値は書いていない。"
-  )
+  (:require [kyoninka.schema :as schema]))
 
 (def procedure
   {:procedure/id :deu-abfall-transport
@@ -64,6 +86,531 @@
    ;; 手数料だけで、適用範囲ではない —— そこに州名を書くと『ドイツの一部にしか
    ;; 効かない法律』という別の主張になる。州差は下の :land-* が持つ。
    :procedure/extent "Deutschland (Bund)"
+   ;; **額を決めるのは連邦ではなく州。** 全国値が存在しないので :amount は無い。
+   ;; 通貨と最小単位は観測が共有する（州が変わっても EUR）。
+   :procedure/fee {:currency "EUR"
+                   :minor-unit 100
+                   :kind :landesrechtliche-verwaltungsgebuehr
+                   :set-by {:level :sub-national
+                            :body "各州（Land）の Gebühren-/Kostenordnung。NRW と Sachsen では Kreis / kreisfreie Stadt が執行するため州の規範の下にさらに散らばりが生じる"
+                            :basis "KrWG は手数料額を定めない。VwKostG 系の州法と各州の Gebührenordnung が定める（AbfAEV §7〜§11 の手続に対応）"}
+                   :verify (schema/unverified "額は州ごとに異なり、しかも 5 つの異なる形（幅 / 下限のみ / 上限のみ / 定めなし / 定額）をとる。申請先の州の Gebührenordnung で実額を確認する。16 州の実測は :procedure/fee-observations にあるが、**その min/max は法定の幅ではない** —— 州ごとの散らばりは 16 個の別々の法規範であって 1 つの幅ではない")}
+
+   ;; 16 州・37 観測（2026-08-07）。**subagent 2 本を独立に走らせ、食い違いを潰した。**
+   ;; 最も重い対立は Hessen で、1 本目が条文 PDF から定額 800/1.000 € を引用し、
+   ;; 2 本目が「同じ PDF に KrWG §§53/54 の項目は無い」と報告した。
+   ;; **推測で採らず条文 PDF を自分で取得して確かめた** —— Nr. 181301/181302/18128 は
+   ;; 実在し、1 本目が正しかった。2 本目が外したのは、項目本文が KrWG ではなく
+   ;; AbfAEV §9/§11 を引いているため。自分で読んだおかげで、どちらの調査にも
+   ;; 無かった Nr. 181303（変更 250 €）も見つかった。
+   ;;
+   ;; **出所の質は州で違う。** 条例本文の行項目まで辿れたのは 11 州、
+   ;; 所管庁の公式表明どまりが 5 州（BE / HH / HB / ST / TH）。とくに Thüringen は
+   ;; ThürVwKostOMUEN に §§53/54 の項目自体が無く、条例が 2012 年の KrWG 施行に
+   ;; 追随していない（旧法の Transportgenehmigung のまま）。この差を
+   ;; `:fee-observation/source-kind` が持つ —— **どちらも「公式」だが同格ではない。**
+   :procedure/fee-observations
+   [{:fee-observation/id "deu-abfall-ni-erlaubnis-floor"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Niedersachsen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :floor
+     :fee-observation/range-min 16000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AllGO Kostentarif Nr. 2.1.35（時間費用、ただし最低 160 €）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.mf.niedersachsen.de/download/1822/Allgemeine_Gebuehrenordnung_AllGO_.pdf"
+     :fee-observation/note "**上限は条文に無い**（höchstens の定めが 2.1.35 に存在しない）。定額でも幅でもなく、上限なしの時間手数料。AllGO は 2025-12-16 改正版"}
+    {:fee-observation/id "deu-abfall-ni-erlaubnis-practice"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Niedersachsen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 36000
+     :fee-observation/approximate? true
+     :fee-observation/source-kind :practice
+     :fee-observation/basis "所管庁 Merkblatt（Staatliches Gewerbeaufsichtsamt Hildesheim、Stand 05/2026）の運用平均"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.gewerbeaufsicht.niedersachsen.de/download/89281/Merkblatt_Erlaubnis_Stand_05_2026.pdf"
+     :fee-observation/note "**この library が以前『AllGO 2.1.35 で平均 ca. 360 €』と記録していた値。数値は正しいが法的性格の記述が誤っていた** —— 原文は durchschnittlich ca.（平均・約）で、条文には一切現れない。上の法定最低額 160 € と混同しないこと"}
+    {:fee-observation/id "deu-abfall-ni-anzeige-floor"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Niedersachsen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :paper
+     :fee-observation/rule-form :floor
+     :fee-observation/range-min 6700
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AllGO Kostentarif Nr. 2.1.32.1 / 2.1.32.2（時間費用、ただし最低 67 €）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.mf.niedersachsen.de/download/1822/Allgemeine_Gebuehrenordnung_AllGO_.pdf"
+     :fee-observation/note "2.1.32 の Anmerkung により、届出が完全かつ AbfAEV §8 の電子手続で提出された場合は徴収しない。紙・不完全なら最低 67 €"}
+    {:fee-observation/id "deu-abfall-be-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Berlin"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 25000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "UGebO Tarifstelle 3013a (1)（Beförderungserlaubnis の交付決定）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://service.berlin.de/dienstleistung/326690/"
+     :fee-observation/note "新規交付のみ。重要事項変更後の決定と、申請により内容/期間を限定した許可は別枠でともに 50–5.000 €。**所管 SBB mbH は Berlin と Brandenburg をまとめて 100–5.000 € と表示するが、その 100 は Brandenburg 側の下限**。条文原文（gesetze.berlin.de）は JS 依存で取得できず、Tarifstelle 表記は SBB の引用に依拠。幅の中の額は廃棄物種類数で決まる（SBB 段階表: 20 種まで 500 €、50 種まで 1.000 €、全種 2.500 €、消費税別）—— **同じ幅を持つ 2 州が体系的に別の額を出しうる**"}
+    {:fee-observation/id "deu-abfall-be-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Berlin"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 5000
+     :fee-observation/range-max 50000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "UGebO Tarifstelle 3013b (1)（KrWG §53 の届出処理）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.sbb-mbh.de/de/aufgaben-der-sbb/anzeigen-53-krwg/gebuehren-der-anzeige/"
+     :fee-observation/note "**無料ではない。** SBB の運用内訳は標準 75 € / 増 150 € / 高 225 € / 最大 500 €（いずれも消費税別）"}
+    {:fee-observation/id "deu-abfall-bb-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Brandenburg"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :grant-or-change
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 10000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "GebOUmwelt (GebOMUGV) Tarifstelle 3.1.21.1"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://bravors.brandenburg.de/verordnungen/gebomugv"
+     :fee-observation/note "交付と変更が同一 Tarifstelle に同居しているので、額を新規のものとして単独で引用できない。最終改正 2025-04-15"}
+    {:fee-observation/id "deu-abfall-bb-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Brandenburg"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 5000
+     :fee-observation/range-max 50000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "GebOUmwelt (GebOMUGV) Tarifstelle 3.1.20.1"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://bravors.brandenburg.de/verordnungen/gebomugv"
+     :fee-observation/note "無料ではない"}
+    {:fee-observation/id "deu-abfall-hh-erlaubnis-floor"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hamburg"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :floor
+     :fee-observation/range-min 37100
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "UmwGebO, Anlage 1 Verwaltungsgebühren（最低 371 €。特別な処理負担があれば増額）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/abfall-entsorgung/sammler-befoerderer-haendler-makler/abfallbefoerderung-erlaubnis-krwg-159504"
+     :fee-observation/note "**上限なしの下限であって幅ではない。** 以前この library が併記していた『50–1.000 €』は §54 の値として裏付けが取れなかった"}
+    {:fee-observation/id "deu-abfall-hh-anzeige-floor"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hamburg"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :floor
+     :fee-observation/range-min 10600
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "UmwGebO, Anlage 1（in der Regel ab 106 €）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/abfall-entsorgung/sammler-befoerderer-haendler-makler/anzeigeverfahren-53-krwg-159494"
+     :fee-observation/note "無料ではない"}
+    {:fee-observation/id "deu-abfall-nw-erlaubnis-none"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Nordrhein-Westfalen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :no-amount-set
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AVwGebO NRW Tarifstelle 4.4.1.26.1（je nach Zeitaufwand nach Tarifstelle 4.1.1.1）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://recht.nrw.de/system/files/2026-04/agt_tarifstelle-04_stand-25.04.2026.pdf"
+     :fee-observation/note "**州法は額を一切定めていない**（定額も幅も無い）。純粋な時間手数料で、Dienstleistungsrichtlinie 2006/123/EG により実費上限に縛られる旨を条文が明記。時間単価は Richtwerte-Erlass（2026-02-14, MB.NRW Nr. 45）の推奨値 LG2.2 87,95 €/h 〜 LG1.1 54,00 €/h。個々の Kreis のページに出る『500–1.000 €』等は自治体の実務値であって州法の幅ではない"}
+    {:fee-observation/id "deu-abfall-nw-anzeige-none"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Nordrhein-Westfalen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :no-amount-set
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AVwGebO NRW Tarifstelle 4.4.1.25（je nach Zeitaufwand）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://recht.nrw.de/system/files/2026-04/agt_tarifstelle-04_stand-25.04.2026.pdf"
+     :fee-observation/note "無料ではない。§54 と同じく額の定めが無い"}
+    {:fee-observation/id "deu-abfall-by-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Bayern"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 25000
+     :fee-observation/range-max 600000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "Kostenverzeichnis (KVz) Tarif-Nr. 8.I.0/35"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.gesetze-bayern.de/Content/Pdf/BayKVzKG?all=True"
+     :fee-observation/note "KVz は 2026-06-15 改正版。16 州で最も高い上限のひとつ"}
+    {:fee-observation/id "deu-abfall-by-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Bayern"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 2500
+     :fee-observation/range-max 10000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "KVz Tarif-Nr. 8.I.0/34.2"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.gesetze-bayern.de/Content/Pdf/BayKVzKG?all=True"
+     :fee-observation/note "**無料ではない。** §53 Abs.3 の措置を要する場合は別枠（34.1）で 150–3.000 €。同じ KVz が隣接項目 8.I.0/32 を明示的に kostenfrei と書いており、無料にする意図があれば明記する体裁 —— §53 にその印は無い"}
+    {:fee-observation/id "deu-abfall-bw-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Baden-Württemberg"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 25000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "GebVerz UM Nummer 1.1.23"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://gewerbeaufsicht.baden-wuerttemberg.de/documents/20121/67096/2_2_3.pdf"
+     :fee-observation/note "**州全域に一律ではない。** GebVO UM §1 Abs.1 がこの手数料表から Landratsämter を明示的に除外しており、BW で §54 許可を出すのは多くが Landratsamt（untere Abfallrechtsbehörde）で郡独自の条例が適用される。GebVO UM §2 により消費税別"}
+    {:fee-observation/id "deu-abfall-bw-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Baden-Württemberg"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 15000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "GebVerz UM Nummer 1.1.22"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://gewerbeaufsicht.baden-wuerttemberg.de/documents/20121/67096/2_2_3.pdf"
+     :fee-observation/note "無料ではない。届出の上限が許可と同じ 5.000 € で、16 州で最も高い §53 の上限"}
+    {:fee-observation/id "deu-abfall-he-erlaubnis-elektronisch"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hessen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :electronic
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 80000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VwKostO（Geschäftsbereich Umwelt）Verwaltungskostenverzeichnis Nr. 181301"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://verkuendung.hessen.de/sites/verkuendung.hessen.de/files/veroeffentlichungsplattform_plugin/published/782/GVBl_2025_Nr_11_Regelungstext.pdf"
+     :fee-observation/note "**16 州で唯一の Festgebühr（定額）。** GVBl 2025 Nr. 11（2025-02-18 公布）。⚠ 2 回目の独立調査が『この PDF に KrWG §§53/54 の項目は無い』と報告したため、**条文 PDF を自分で取得して確かめた**（2026-08-07）—— Nr. 181301 は実在し、親項目は §54 Abs.1 S.1 / Abs.2 を引いている。2 回目が外したのは、項目本文が KrWG ではなく AbfAEV §9/§11 を引いているため"}
+    {:fee-observation/id "deu-abfall-he-erlaubnis-papier"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hessen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :paper
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 100000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VwKostO Nr. 181302（nicht elektronisch beantragt）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://verkuendung.hessen.de/sites/verkuendung.hessen.de/files/veroeffentlichungsplattform_plugin/published/782/GVBl_2025_Nr_11_Regelungstext.pdf"
+     :fee-observation/note "電子申請との差 200 € が電子化のインセンティブ。条文 PDF を自分で読んで確認"}
+    {:fee-observation/id "deu-abfall-he-anzeige-elektronisch"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hessen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :electronic
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 0
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VwKostO Nr. 18128（AbfAEV §8 の電子届出は徴収しない）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://rp-kassel.hessen.de/umwelt/abfall/sammlung-transport/erlaubnis-sammeln-befoerdern"
+     :fee-observation/note "条文の文言は『Für die Prüfung einer elektronischen Anzeige nach §8 Abs.1 AbfAEV wird keine Gebühr erhoben』—— 無料は §53 という手続に付いているのではなく**電子経路に付いている**。紙は別 observation（50 €）"}
+    {:fee-observation/id "deu-abfall-sn-erlaubnis-befristet"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 37500
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "10. SächsKVZ Anlage 1 lfd. Nr. 3 Tarifstelle 13.4.1（10 年以内の期限付き許可）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.revosax.sachsen.de/vorschrift/19330-Zehntes-Saechsisches-Kostenverzeichnis"
+     :fee-observation/note "通常ケース。**額は裁量ではなく計算規則で決まる** —— 許可の経済的価値を年 500 € とし期限年数を乗じ、廃棄物コード数に応じて減額（1–10 コード 25% / 11–50 15% / 51–100 7,5% / 100 超 減額なし）。⚠ 一部の Landkreis ページが 100–6.000 € と表示するが、これは 13.4.3（変更 100–5.000）の下限と 13.4.2 の上限を跨いだ合成で、条文上そのような項目は無い"}
+    {:fee-observation/id "deu-abfall-sn-erlaubnis-unbefristet"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 450000
+     :fee-observation/range-max 600000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "10. SächsKVZ Tarifstelle 13.4.2（10 年超の期限付き、または無期限の許可）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.revosax.sachsen.de/vorschrift/19330-Zehntes-Saechsisches-Kostenverzeichnis"
+     :fee-observation/note "13.4.1 と連続しない二段構え（5.000 と 4.500 が重なる）。同じ :licence-type / :stage / :channel を持つ 13.4.1 とは許可期間で分かれる —— この軸は observation の 3 軸では表せず、note が担っている"}
+    {:fee-observation/id "deu-abfall-sn-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 3500
+     :fee-observation/range-max 27500
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "10. SächsKVZ Tarifstelle 13.1"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.revosax.sachsen.de/vorschrift/19330-Zehntes-Saechsisches-Kostenverzeichnis"
+     :fee-observation/note "無料ではない"}
+    {:fee-observation/id "deu-abfall-rp-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Rheinland-Pfalz"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 30000
+     :fee-observation/range-max 100000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "Gebührenverzeichnis zur Sonderabfall-Kostenverordnung Lfd. Nr. 2.7"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://sam-rlp.de/aufgaben/gebuehren/"
+     :fee-observation/note "**根拠条例に注意。** RLP の Besonderes Gebührenverzeichnis（Umweltrecht, 2019-08-28）には §§53/54 のエントリが存在せず、所管が SAM（Zentrale Stelle für Sonderabfälle）のため別条例にある。上限 1.000 € は 16 州で最低水準"}
+    {:fee-observation/id "deu-abfall-rp-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Rheinland-Pfalz"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 5000
+     :fee-observation/range-max 15000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "Gebührenverzeichnis zur Sonderabfall-Kostenverordnung Lfd. Nr. 2.5"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://sam-rlp.de/aufgaben/gebuehren/"
+     :fee-observation/note "無料ではない"}
+    {:fee-observation/id "deu-abfall-sh-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Schleswig-Holstein"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 25000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VerwGebVO Allgemeiner Gebührentarif Tarifstelle 1.1.14"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.segeberg.de/loadDocument.phtml?ObjSvrID=3466&ObjID=854&ObjLa=1&Ext=PDF"
+     :fee-observation/note "VerwGebVO は 2018-09-26 のもの。2024-11-26 改正令が Tarifstelle 19 のみを変更し 1.1.13/1.1.14 に影響しないことは確認したが、2024-11-19 改正令の本文自体は未閲覧（州 juris ポータルが JS 依存）—— 2026 時点までの改正監査は未完"}
+    {:fee-observation/id "deu-abfall-sh-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Schleswig-Holstein"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 3000
+     :fee-observation/range-max 12000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VerwGebVO Tarifstelle 1.1.13"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.segeberg.de/loadDocument.phtml?ObjSvrID=3466&ObjID=854&ObjLa=1&Ext=PDF"
+     :fee-observation/note "無料ではない。16 州で最も低い §53 の上限"}
+    {:fee-observation/id "deu-abfall-mv-erlaubnis-ceiling"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Mecklenburg-Vorpommern"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :ceiling
+     :fee-observation/range-max 550000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AbfKostVO M-V Anlage Tarifstelle 222.4（nach Zeitaufwand, höchstens 5.500 €）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.mv-serviceportal.de/leistung?leistungId=118519592&ortId=7230"
+     :fee-observation/note "**下限の定めが無く上限のみ**（Niedersachsen の逆）。時間単価は Tarifstelle 101.1 で 30 分単位、LG2 第2入職以上 40,50 €/半時間。⚠ 閲覧できた条文は 2014-10-17 改正版で現行は 2024-01-31 改正（landesrecht-mv.de が JS 依存）。州官庁 2 ページが同じ 5.500 を示しており額は変わっていないと見られる。2 回目の独立調査は Landkreis のページで『Mindestens 0,00 EUR, höchstens 5500,00 EUR』という表示を読んでいる —— 下限 0 と『下限の定めが無い』は実質同じだが、**表示のしかたが出所によって違う**"}
+    {:fee-observation/id "deu-abfall-mv-anzeige-ceiling"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Mecklenburg-Vorpommern"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :ceiling
+     :fee-observation/range-max 20000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "AbfKostVO M-V Tarifstelle 222.1（nach Zeitaufwand, höchstens 200 €）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.mv-serviceportal.de/leistung?leistungId=118519592&ortId=7230"
+     :fee-observation/note "無料ではない。州ポータルの『0,00 - 200,00 EUR』は時間費用がゼロになりうるという運用表示であって免除規定ではない"}
+    {:fee-observation/id "deu-abfall-sl-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Saarland"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 10000
+     :fee-observation/range-max 1000000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "Allgemeines Gebührenverzeichnis（52. Änderung）Abschnitt 2 Nr. 1.23"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.saarland.de/SharedDocs/Downloads/DE/LAV/Service/Gebuehren/dl_Allgemeines-Gebuehrenverzeichnis_lav.pdf?__blob=publicationFile&v=2"
+     :fee-observation/note "16 州で最も広い法定の幅（上限 10.000 € は最高）"}
+    {:fee-observation/id "deu-abfall-sl-anzeige"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Saarland"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 5000
+     :fee-observation/range-max 150000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "Allgemeines Gebührenverzeichnis Nr. 1.22"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.saarland.de/SharedDocs/Downloads/DE/LAV/Service/Gebuehren/dl_Allgemeines-Gebuehrenverzeichnis_lav.pdf?__blob=publicationFile&v=2"
+     :fee-observation/note "無料ではない。⚠ 所管の LUA サービスポータルは同じ届出を 50–100 € と表示しており条例の幅（50–1.500）と一致しない。条例側を法定の幅として採り、ポータル値は実務レンジと解した（両者を調停する文書は見つからず）"}
+    {:fee-observation/id "deu-abfall-hb-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Bremen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 5700
+     :fee-observation/range-max 287500
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "Die Senatorin für Umwelt, Klima und Wissenschaft, Referat 23（根拠として KrWG §54 Abs.1-7 / AbfAEV §10 を挙げる）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.service.bremen.de/dienstleistungen/antrag-auf-erteilung-einer-erlaubnis-fuer-sammler-befoerderer-haendler-und-makler-von-gefaehrlichen-abfaellen-16792?reg=kosten"
+     :fee-observation/note "州公式サービスポータルの記載（2026-04-27 更新）で、Tarifstelle / Kostenverzeichnis の番号は明示されておらず条例の行項目まで辿れていない。57 € という下限は他州に類例が無い"}
+    {:fee-observation/id "deu-abfall-hb-anzeige-free"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Bremen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 0
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "Die Senatorin für Umwelt, Klima und Wissenschaft（gebührenfrei）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.service.bremen.de/dienstleistungen/anzeige-einer-taetigkeit-als-sammler-befoerderer-haendler-und-makler-von-abfaellen-16796"
+     :fee-observation/note "**16 州で、提出方法を問わず §53 が無条件に無料なのは Bremen だけ。** 条件付き無料が Hessen（電子のみ）と Niedersachsen（完全かつ電子のみ）の 2 州、残り 13 州は有料 —— 『多くの州で無料』という前提は成り立たない"}
+    {:fee-observation/id "deu-abfall-st-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen-Anhalt"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 30000
+     :fee-observation/range-max 100000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "AllGO LSA（州公式ポータルが根拠として挙げるが Tarifstelle 番号は不記載）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://buerger.sachsen-anhalt.de/detail?areaId=300381&pstId=29827919"
+     :fee-observation/note "条例本文まで辿れていない。所管は Landkreis / kreisfreie Stadt の untere Abfallbehörde"}
+    {:fee-observation/id "deu-abfall-st-anzeige-papier"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen-Anhalt"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :paper
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 10000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "AllGO LSA（州公式ポータル記載）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://buerger.sachsen-anhalt.de/detail?areaId=300381&pstId=29827919"
+     :fee-observation/note "無料ではない。EFB・EMAS 事業者は紙 150 €"}
+    {:fee-observation/id "deu-abfall-st-anzeige-elektronisch"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Sachsen-Anhalt"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :electronic
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 7500
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "AllGO LSA（eAEV-formulare.de 経由）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://buerger.sachsen-anhalt.de/detail?areaId=300381&pstId=29827919"
+     :fee-observation/note "EFB・EMAS 事業者は電子 120 €"}
+    {:fee-observation/id "deu-abfall-th-erlaubnis"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Thüringen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :range
+     :fee-observation/range-min 25000
+     :fee-observation/range-max 500000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "Serviceportal Thüringen（Thüringer Ministerium für Umwelt, Energie, Naturschutz und Forsten が 2025-05-21 に fachlich freigegeben）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://buerger.thueringen.de/detail?pstId=741791"
+     :fee-observation/note "⚠ **条例に対応する項目が存在しない。** ThürVwKostOMUEN の Anlage Teil A Abschnitt 1『Abfall』は 2012 年以前の KrW-/AbfG のままで、§§53/54 の Tarifstelle が無い。Nr. 15.1『Erteilung einer Transportgenehmigung 250,00』は廃止された Transportgenehmigung であって §54 の許可ではない —— **この 250 を §54 の額として使わないこと**"}
+    {:fee-observation/id "deu-abfall-he-anzeige-papier"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hessen"
+     :fee-observation/licence-type :anzeige
+     :fee-observation/stage :new
+     :fee-observation/channel :paper
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 5000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VwKostO（Geschäftsbereich Umwelt）Nr. 18128（AbfAEV §7 Abs.1 の届出審査）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://verkuendung.hessen.de/sites/verkuendung.hessen.de/files/veroeffentlichungsplattform_plugin/published/782/GVBl_2025_Nr_11_Regelungstext.pdf"
+     :fee-observation/note "同じ Nr. 18128 が紙 50 € と電子無料の両方を定める。条文 PDF を自分で読んで確認"}
+    {:fee-observation/id "deu-abfall-he-erlaubnis-aenderung"
+     :fee-observation/procedure :deu-abfall-transport
+     :fee-observation/authority "Hessen"
+     :fee-observation/licence-type :erlaubnis
+     :fee-observation/stage :change
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 25000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "VwKostO Nr. 181303（AbfAEV §10 Abs.6 S.1 による重要事項変更に伴う許可の変更）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://verkuendung.hessen.de/sites/verkuendung.hessen.de/files/veroeffentlichungsplattform_plugin/published/782/GVBl_2025_Nr_11_Regelungstext.pdf"
+     :fee-observation/note "条文 PDF を自分で読んで見つけた項目。1 回目の調査は交付（181301/181302）だけを返しており、変更は入っていなかった"}]
+
    :procedure/source-urls
    [
                         "https://service.berlin.de/dienstleistung/326690/"
