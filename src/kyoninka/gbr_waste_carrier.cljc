@@ -26,8 +26,12 @@
     （ADR-2607141620 捏造ゼロ原則）。検索に出た『2 か月』『4 か月』は
     NIEA / Natural Resources Wales の値で England のものではない。
   - **手数料が整数ではない**（£191.02）。JPY には最小単位の端数が無いため
-    既存 2 本では起きなかったが、`:procedure/fee-amount` の
-    `:db.type/long` 宣言はこの値を表現できない（申し送り事項）。
+    既存 2 本では起きなかった。**この値が schema を直させた** —— 額は最小単位
+    （pence）の整数 19102 で持ち、`:procedure/fee` の `:minor-unit` が 1 通貨単位
+    あたりの最小単位数（GBP は 100）を持つ。浮動小数で金額を持たない。
+  - **額を定めているのは法令ではなく Environment Agency**。2025-10 の £184 から
+    2026-08 の £191.02 へ、法改正を経ずに動いている。全国一律なので単一の額を
+    書けるが、`:set-by` の level は `:statute` ではなく `:national-authority`。
 
   収録値は :verify フラグ付き — 申請直前に GOV.UK で実値を確認すること
   （それ自体が step 1）。実際 2025-10 の Environment Agency blog は £184 / £125、
@@ -73,6 +77,13 @@
                    :minor-unit 100
                    :currency "GBP"
                    :kind :upper-tier-registration
+                   ;; **法令本文に額は無い。** 額は Environment Agency の
+                   ;; charging scheme にあり、法改正なしに改定される —— 実際
+                   ;; 2025-10 £184 -> 2026-08 £191.02 と動いた。全国一律なので
+                   ;; 単一の額を書けるが、それは法定額だからではない。
+                   :set-by {:level :national-authority
+                            :body "Environment Agency（England）"
+                            :basis "Waste (England and Wales) Regulations 2011 (SI 2011/988) Part 8 に基づく Environment Agency の課金。額は法令本文ではなく GOV.UK 掲載の課金表にある"}
                    :verify (schema/unverified "GOV.UK『Register or renew as a waste carrier, broker or dealer』で最新額を確認。2025-10 の EA blog は £184、2026-08 の GOV.UK は £191.02 —— 実際に改定されている")}
    ;; :procedure/standard-period-days は**意図的に無い**。reg 29 は審査期間を
    ;; 定めておらず、EA の公表標準処理期間も確認できなかった。ns docstring 参照。

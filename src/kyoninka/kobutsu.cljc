@@ -21,7 +21,200 @@
                    ;; JPY は最小単位の端数を持たないので minor-unit は 1。
                    :minor-unit 1
                    :kind :新規許可申請手数料
+                   ;; **19,000 円 / 81,000 円は「国が定めた額」ではない。**
+                   ;; 地方自治法第228条第1項は「政令で定める金額の手数料を徴収することを
+                   ;; **標準として**条例を定めなければならない」であって拘束ではなく、
+                   ;; 徴収の法的根拠は各自治体の手数料条例。全国一律でも純粋な自治でもない
+                   ;; ので `:statute-standard`。
+                   :set-by {:level :statute-standard
+                            :body "各都道府県（手数料条例）。許可権者は都道府県公安委員会"
+                            :basis "地方自治法第228条第1項 + 地方公共団体の手数料の標準に関する政令（平成12年政令第16号）別表 二十八の項1"}
                    :verify (schema/unverified "警視庁の公式ページ/管轄警察署で最新額を確認")}
+   ;; 11 都道府県 + 条例本文 2 件を実測（2026-08-07）。**14 件すべて 19,000 円で
+   ;; 一致し、不一致はゼロ。** 新潟県のみ公式が額を公表しておらず未確認（＝不一致
+   ;; ではない）。政令が「標準」でしかない以上、一律であることは**主張ではなく
+   ;; 実測結果**として持つ必要がある —— 産廃側では実際に外れた自治体があった。
+   :procedure/fee-observations
+   [{:fee-observation/id "kobutsu-marunouchi-seirei-hyojun"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "国（政令の標準額）"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "地方公共団体の手数料の標準に関する政令（平成12年政令第16号）別表 二十八の項1（古物営業法第三条の許可申請に対する審査 一万九千円）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://laws.e-gov.go.jp/law/412CO0000000016"
+     :fee-observation/note "**これは『国が定めた額』ではなく『標準』。** 地方自治法第228条第1項は「政令で定める金額の手数料を徴収することを標準として条例を定めなければならない」であって拘束ではない。徴収の法的根拠は 47 都道府県それぞれの手数料条例で、法形式上は条例で別額を定めうる"}
+    {:fee-observation/id "kobutsu-marunouchi-tokyo-jorei"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "東京都（警視庁関係手数料条例 平成12年東京都条例第99号 別表第一 四(一)）"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "警視庁関係手数料条例 別表第一 四(一)（古物営業許可申請手数料 一万九千円）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.reiki.metro.tokyo.lg.jp/reiki/reiki_honbun/g101RG00002173.html"
+     :fee-observation/note "条例本文＝徴収の一次根拠。同表に再交付 1,300 円・書換 1,500 円"}
+    {:fee-observation/id "kobutsu-marunouchi-aichi-jorei"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "愛知県（愛知県手数料条例 別表）"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :instrument
+     :fee-observation/basis "愛知県手数料条例 別表（古物営業許可申請手数料 一件につき 一九、〇〇〇）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.aichi.jp/police_reiki/reiki_honbun/u393RG00000046.html"
+     :fee-observation/note "条例本文"}
+    {:fee-observation/id "kobutsu-marunouchi-tokyo"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "東京都公安委員会（警視庁）"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "警視庁の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.keishicho.metro.tokyo.lg.jp/tetsuzuki/kobutsu/tetsuzuki/kyoka.html"}
+    {:fee-observation/id "kobutsu-marunouchi-hokkaido"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "北海道公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "北海道警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.police.pref.hokkaido.lg.jp/info/seian/kobutu/kobutu-shinsei.html"
+     :fee-observation/note "北海道収入証紙で納付"}
+    {:fee-observation/id "kobutsu-marunouchi-miyagi"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "宮城県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "宮城県警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.police.pref.miyagi.jp/seian/kyoninka/shinsei/kobutsu/kobutu.html"
+     :fee-observation/note "同ページに再交付 1,300 円・書換 1,500 円。更新の欄は存在しない"}
+    {:fee-observation/id "kobutsu-marunouchi-aichi"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "愛知県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "愛知県警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.aichi.jp/police/shinsei/sonota/kobutsu/kobutusyoukyokasinsei.html"}
+    {:fee-observation/id "kobutsu-marunouchi-kyoto"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "京都府公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "京都府警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.kyoto.jp/fukei/site/seiki_b/kobutu/index.html"}
+    {:fee-observation/id "kobutsu-marunouchi-osaka"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "大阪府公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "大阪府警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.police.pref.osaka.lg.jp/tetsuduki/kyoninka/kobutsu/kobutsu/kobutsu_shinki/3684.html"
+     :fee-observation/note "検索エンジンが返す旧 URL は 404 ではなく 200 を返してトップへリダイレクトするため、自動要約が『記載なし』と誤答する"}
+    {:fee-observation/id "kobutsu-marunouchi-hiroshima"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "広島県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "広島県警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.hiroshima.lg.jp/site/police/kobutsutetsuduki.html"
+     :fee-observation/note "本文表記は「1万9000円」"}
+    {:fee-observation/id "kobutsu-marunouchi-fukuoka"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "福岡県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "福岡県警察の添付書類一覧 PDF"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.police.pref.fukuoka.jp/data/open/cnt/3/7699/1/tennpusyoruiitirann.pdf"
+     :fee-observation/note "HTML には額が無く PDF にのみ記載。同表に更新の行は存在しない"}
+    {:fee-observation/id "kobutsu-marunouchi-miyazaki"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "宮崎県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "宮崎県警察の手続案内"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.miyazaki.lg.jp/police/seikatsuanzenbu/kobutsu_new.html"
+     :fee-observation/note "宮崎県収入証紙"}
+    {:fee-observation/id "kobutsu-marunouchi-okinawa"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "沖縄県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "沖縄県警察の公式記載例（納付書ページ）"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.police.pref.okinawa.jp/docs/2025100600019/file_contents/R7_kojin.pdf"
+     :fee-observation/note "沖縄県証紙 19,000 円分"}
+    {:fee-observation/id "kobutsu-marunouchi-kagoshima"
+     :fee-observation/procedure :kobutsu-marunouchi
+     :fee-observation/authority "鹿児島県公安委員会"
+     :fee-observation/licence-type :kobutsu
+     :fee-observation/stage :new
+     :fee-observation/channel :any
+     :fee-observation/rule-form :fixed
+     :fee-observation/amount 19000
+     :fee-observation/source-kind :authority-guidance
+     :fee-observation/basis "鹿児島県警察の手続案内 PDF"
+     :fee-observation/as-of "2026-08-07"
+     :fee-observation/source-url "https://www.pref.kagoshima.jp/ja09/police/shinsei/kobutsu/documents/85337_20241106161637-1.pdf"
+     :fee-observation/note "「※金額は R6.11.6 時点」の注記あり"}]
+
    :procedure/standard-period-days {:value 40
                                     :verify (schema/unverified "警視庁公表の標準処理期間を確認")}
    :procedure/valid-years nil ; 古物商許可に有効期間・更新制度はない(廃止/変更届のみ)

@@ -63,7 +63,9 @@
   ;; スカラに展開される。library の実データは複合値のまま持つ（`:verify` を
   ;; 値から離さないため）。
   #{:procedure/fee-amount :procedure/fee-currency :procedure/fee-kind
-    :procedure/fee-minor-unit :procedure/fee-verify :procedure/standard-period-verify})
+    :procedure/fee-minor-unit :procedure/fee-verify :procedure/standard-period-verify
+    ;; `:procedure/fee` の中の `:set-by` map（`:level`/`:body`/`:basis`）。
+    :procedure/fee-set-by-level :procedure/fee-set-by-body :procedure/fee-set-by-basis})
 
 (deftest every-used-attribute-is-declared
   (testing "実データに現れる属性は全部宣言されている"
@@ -142,6 +144,197 @@
       (when (contains? p :procedure/standard-period-days)
         (is (some? (get-in p [:procedure/standard-period-days :verify]))
             (str (:procedure/id p) " の標準処理期間に :verify が無い"))))))
+
+;; ── 手数料の観測 ────────────────────────────────────────────────────────────
+;;
+;; 額が単一でない制度のための表現。ここの検査は全部**同じ 1 つの誤りを防ぐ**ために
+;; ある: **標本のばらつきを法定の幅として読ませないこと。**
+;;
+;; Leeds £181 と Kirklees £804.78 は「£181〜£804.78 が法定の幅」ではなく
+;; 「私が見た 4 つの council がその範囲だった」でしかない。£900 の council が
+;; 無い証拠はどこにもない。一方 Berlin の 250–5.000 € は**その州の規則自身が
+;; 幅として定めている** —— 法的な対象が違う。
+
+(defn- observations [p] (:procedure/fee-observations p))
+
+;; **免許種別の語彙は法域ごとに違う。それでも登録制にする。**
+;; 「keyword なら何でもよい」にすると綴り違いが黙って別の種別になり、
+;; 「site の額を全部」のような query が静かに取りこぼす。ここに足す手間が、
+;; 新しい法域を収録するときに「この国の免許種別は何か」を一度考えさせる。
+;;
+;; **JPN の産廃で積替え保管の有無を種別として持つのは更新だけ。** 新規は
+;; 22 自治体すべてが区別しておらず（政令の標準額にも区分が無い）、
+;; そこに `-no-storage` を書くと表に無い区別を読み込むことになる。
+(def licence-types
+  #{:site :collector :unspecified                 ; GBR scrap metal
+    :erlaubnis :anzeige                           ; DEU KrWG §54 / §53
+    :kobutsu                                      ; JPN 古物商
+    :sanpai :sanpai-no-storage :sanpai-with-storage
+    :tokubetsu-kanri-no-storage})                 ; JPN 産廃・特管
+
+(deftest observations-are-attributable
+  (testing "観測は必ず『どの当局の・いつの・どこで読んだ』額である"
+    (doseq [p procedures
+            o (observations p)]
+      (let [where (str (:procedure/id p) " / " (pr-str (:fee-observation/authority o)))]
+        (is (string? (:fee-observation/authority o))
+            (str where ": 当局名が無い —— 誰の額か分からない観測は使えない"))
+        ;; **日付の無い額は検証できない。** 手数料は実際に改定される
+        ;; （GBR 廃棄物運搬業は 2025-10 の £184 から 2026-08 の £191.02 へ動いた）。
+        (is (string? (:fee-observation/as-of o)) (str where ": :as-of が無い"))
+        (is (and (string? (:fee-observation/source-url o))
+                 (str/starts-with? (:fee-observation/source-url o) "http"))
+            (str where ": 出所 URL が無い"))
+        ;; **省略を『不明』の意味に使わせない。** 種別も段階も、分からなかった
+        ;; なら分からなかったと書く値がある。
+        (is (contains? licence-types (:fee-observation/licence-type o))
+            (str where ": :licence-type が無いか未登録（当局が分けていないなら :unspecified）: "
+                 (pr-str (:fee-observation/licence-type o))))
+        (is (contains? #{:new :renewal :change :grant-or-renewal :grant-or-change :unstated}
+                       (:fee-observation/stage o))
+            (str where ": :stage が無いか未知。**:grant-or-renewal（当局が両方に同じ額を"
+                 "定めている）と :unstated（当局が書いていない）を混ぜないこと**"))))))
+
+(deftest observation-shape-matches-its-rule-form
+  ;; **最初この検査は `:amount` と `[range-min range-max]` の 2 択だった。**
+  ;; ドイツ 16 州を実測して、その 2 択では 5 州が表現できないと分かった ——
+  ;; 上限なしの下限（NI ≥160 €、HH ≥371 €）、下限なしの上限（MV ≤5.500 €）、
+  ;; そして **NRW は規則が額を一切定めない**（純粋な時間手数料）。
+  ;; 型が世界の形を決めてしまっていた、という同じ誤りの 3 度目。
+  (testing "額の形は :rule-form が宣言し、実際の値がそれと一致する"
+    (doseq [p procedures
+            o (observations p)]
+      (let [where (str (:procedure/id p) " / " (:fee-observation/authority o)
+                       " / " (:fee-observation/id o))
+            form (:fee-observation/rule-form o)
+            amt? (contains? o :fee-observation/amount)
+            lo? (contains? o :fee-observation/range-min)
+            hi? (contains? o :fee-observation/range-max)]
+        (is (contains? #{:fixed :range :floor :ceiling :no-amount-set} form)
+            (str where ": :rule-form が無いか未知: " (pr-str form)))
+        (case form
+          :fixed (is (and amt? (not lo?) (not hi?) (integer? (:fee-observation/amount o)))
+                     (str where ": :fixed なのに額が単一の整数でない"))
+          :range (is (and (not amt?) lo? hi?
+                          (<= (:fee-observation/range-min o) (:fee-observation/range-max o)))
+                     (str where ": :range なのに両端が揃っていない、または下端が上端を超えている"))
+          ;; **開いた端を欠測と区別する。** :floor は上限が「無い」のであって
+          ;; 「調べていない」ではない —— だから上限が有ってはいけない。
+          :floor (is (and (not amt?) lo? (not hi?))
+                     (str where ": :floor なのに下限だけになっていない"))
+          :ceiling (is (and (not amt?) (not lo?) hi?)
+                       (str where ": :ceiling なのに上限だけになっていない"))
+          ;; 規則が額を定めない。**空欄だが調査漏れではない。**
+          :no-amount-set (is (and (not amt?) (not lo?) (not hi?))
+                             (str where ": :no-amount-set なのに額がある"))
+          nil)
+        (doseq [k [:fee-observation/amount :fee-observation/range-min :fee-observation/range-max]
+                :when (contains? o k)]
+          (is (integer? (get o k))
+              (str where ": " k " が最小単位の整数でない: " (pr-str (get o k)))))))))
+
+(deftest amount-set-observations-say-who-said-so
+  ;; **「規則がそう定めている」と「所管庁がそう言っている」は同格ではない。**
+  ;; Thüringen は所管省が承認したポータルに 250–5.000 € と出るが、
+  ;; ThürVwKostOMUEN には §§53/54 の項目自体が無い（条例が 2012 年の KrWG 施行に
+  ;; 追随していない）。両方「公式」だが、片方には条文の裏付けが無い。
+  (testing "観測はどの種類の出所から来たかを述べる"
+    (doseq [p procedures
+            o (observations p)]
+      (let [where (str (:procedure/id p) " / " (:fee-observation/id o))
+            sk (:fee-observation/source-kind o)]
+        (when (some? sk)
+          (is (contains? #{:instrument :authority-guidance :practice} sk)
+              (str where ": 未知の :source-kind: " (pr-str sk)))
+          ;; 条文由来を名乗るなら、どの行項目かを言えること。
+          (when (= :instrument sk)
+            (is (and (string? (:fee-observation/basis o)) (seq (:fee-observation/basis o)))
+                (str where ": :instrument を名乗るのに :basis が無い"))))))))
+
+(deftest channel-is-explicit-where-it-matters
+  ;; 提出経路で額が変わる制度が実在する（HE §54 は電子 800 € / 紙 1.000 €、
+  ;; ST §53 は紙 100 € / 電子 75 €、HE §53 と NI §53 は電子だけ無料）。
+  ;; `:any` は「経路で変わらない」であって「調べていない」ではない。
+  (testing "経路が値域として明示されている"
+    (doseq [p procedures
+            o (observations p)
+            :when (contains? o :fee-observation/channel)]
+      (is (contains? #{:electronic :paper :any} (:fee-observation/channel o))
+          (str (:procedure/id p) " / " (:fee-observation/id o)
+               ": 未知の :channel: " (pr-str (:fee-observation/channel o))))))
+
+  (testing "同じ当局・同じ免許種別・同じ段階で複数の経路があるなら、:any を混ぜない"
+    ;; 経路で分岐する制度に `:any` の行が混ざると、それが「全経路共通の額」なのか
+    ;; 「経路を見ていない額」なのか読めなくなる。
+    ;;
+    ;; **最初この検査は当局を見ずに (免許種別, 段階) で束ねていた。** ドイツの
+    ;; `[:erlaubnis :new]` は 16 州にまたがるので、Hessen だけが経路で分岐する
+    ;; 正しいデータに対して落ちた —— 曖昧なのは同じ当局の中に両方ある場合だけ。
+    (doseq [p procedures
+            [k os] (group-by (juxt :fee-observation/authority
+                                   :fee-observation/licence-type
+                                   :fee-observation/stage)
+                             (observations p))
+            :let [chans (set (keep :fee-observation/channel os))]
+            :when (and (contains? chans :any) (> (count chans) 1))]
+      (is false
+          (str (:procedure/id p) " " (pr-str k)
+               " に :any と具体的な経路が同居している: " (pr-str chans))))))
+
+(deftest fee-itself-carries-no-range
+  ;; `:procedure/fee` の直下に幅があると、それが法定なのか、収録者が観測の
+  ;; min/max を取ったものなのかを読み手が区別できない。幅は observation の
+  ;; **中**にだけ置く。
+  (testing "手続きの手数料そのものは幅を持たない（幅は観測の中にだけ）"
+    (doseq [p procedures
+            :let [fee (:procedure/fee p)]
+            :when fee]
+      (doseq [k [:range :min :max :range-min :range-max :from :to]]
+        (is (not (contains? fee k))
+            (str (:procedure/id p) " の :procedure/fee に " k
+                 " がある。観測の min/max を制度の幅として出さないこと"))))))
+
+(deftest amount-only-when-the-law-sets-it
+  ;; 額を下位の当局が決める制度で代表額を 1 つ書くと、その 1 当局の値が
+  ;; 制度全体の額として読まれる —— 残りの全当局について嘘になる。
+  (testing "全国値としての :amount は、額を国が定めている制度でだけ書ける"
+    (doseq [p procedures
+            :let [fee (:procedure/fee p)]
+            :when (and fee (contains? fee :amount))]
+      (let [level (get-in fee [:set-by :level])]
+        (is (contains? #{:statute :national-authority :statute-standard} level)
+            (str (:procedure/id p) " は :amount を持つのに :set-by の level が "
+                 (pr-str level) " —— 額が下位当局で決まるなら全国値は書けない。"
+                 "観測として :procedure/fee-observations に置くこと")))))
+
+  (testing "額を決める主体は、それ自体が data として引ける"
+    (doseq [p procedures
+            :let [fee (:procedure/fee p)]
+            :when fee]
+      (let [sb (:set-by fee)]
+        (is (contains? #{:statute :national-authority :statute-standard :sub-national} (:level sb))
+            (str (:procedure/id p) " の :set-by :level が無いか未知の値: " (pr-str sb)))
+        (is (and (string? (:basis sb)) (seq (:basis sb)))
+            (str (:procedure/id p) " の :set-by に根拠条文が無い"))))))
+
+(deftest approximate-observations-say-so
+  ;; 「ca.」「平均」としか書かれていない値を確定額と同じ列に置くのはよいが、
+  ;; **確定額のふりをさせない。**
+  (testing "概算の観測は、何が概算なのかを note で述べる"
+    (doseq [p procedures
+            o (observations p)
+            :when (:fee-observation/approximate? o)]
+      (is (and (string? (:fee-observation/note o)) (seq (:fee-observation/note o)))
+          (str (:procedure/id p) " / " (:fee-observation/authority o)
+               ": :approximate? なのに note が無い —— 何が概算なのか読めない")))))
+
+(deftest observations-are-uniquely-identified
+  (testing "観測 id が全手続きを通じて一意（datom 面で上書きし合わないため）"
+    (let [ids (mapcat #(map :fee-observation/id (observations %)) procedures)]
+      (is (every? string? ids) "id の無い観測がある")
+      (is (= (count ids) (count (distinct ids)))
+          (str "観測 id が重複している: "
+               (pr-str (->> ids frequencies (filter #(> (val %) 1)) (map key) sort)))))))
 
 (deftest sources-are-queryable
   ;; この library の原則は「捏造ゼロ・すべての値に出所」。**出所が ns docstring に
