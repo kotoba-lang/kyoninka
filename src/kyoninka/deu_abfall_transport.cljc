@@ -54,10 +54,16 @@
    ;; **法域は連邦。** KrWG / AbfAEV / AVV はいずれも連邦法で、州法ではない。
    ;; 州が持つのは所管（どの官庁が処理するか）と手数料。混ぜない。
    :procedure/jurisdiction "DEU"
-   ;; **:procedure/extent は付けない。** KrWG は連邦法で全域に及ぶ（省略は
-   ;; 「法域全域」を意味する）。州ごとに違うのは手数料と窓口であって
-   ;; 法の適用範囲ではない —— そこを extent に書くと『ドイツの一部にしか
+   ;; **範囲は連邦全域。GBR の 2 本とは理由が逆。** England / England and Wales は
+   ;; 法自体が devolve していて範囲が国より狭いのに対し、ドイツは範囲が国と一致する
+   ;; —— KrWG §54 Abs.1 S.4「Die Erlaubnis nach Satz 1 gilt für die Bundesrepublik
+   ;; Deutschland.」で明文化されている。
+   ;;
+   ;; 省略しても schema 上は「法域全域」を意味するが、**省略は『確認した』と
+   ;; 『考えていない』を区別できない**ので明示する。州が決めるのは所管官庁と
+   ;; 手数料だけで、適用範囲ではない —— そこに州名を書くと『ドイツの一部にしか
    ;; 効かない法律』という別の主張になる。州差は下の :land-* が持つ。
+   :procedure/extent "Deutschland (Bund)"
    :procedure/source-urls
    [
                         "https://service.berlin.de/dienstleistung/326690/"
