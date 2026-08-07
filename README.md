@@ -6,15 +6,27 @@ a JVM runtime. Procedure text, legal questions, current authority information,
 fees, documents, persistence, and external actions remain host-owned CLJC data
 and code.
 
-日本の許認可手続きを **procedure-as-data**（Datomic 互換 EDN + 純関数 + 状態機械 +
+許認可手続きを **procedure-as-data**（Datomic 互換 EDN + 純関数 + 状態機械 +
 append-only 台帳イベント）で表すライブラリ。ADR-2607141620（com-junkawasaki/root）。
 
-初期収録（ITAD 事業 = itad.gftd.ai の許認可、ADR-2607141446）:
+**2026-08-07 に日本以外へ広げた。** それまでは日本専用で、schema に法域属性が
+1 つも無く「日本であること」が暗黙だった（`:procedure/fee-jpy` は通貨を属性名に
+焼いていた）。いまは `:procedure/jurisdiction`（ISO 3166-1 alpha-3）が必須で、
+手数料は通貨中立（最小単位の整数 + `:minor-unit`）。
 
-| ns | 手続き | 根拠法 | 窓口 |
-|---|---|---|---|
-| `kyoninka.sanpai` | 産業廃棄物収集運搬業許可（東京都・積替え保管なし） | 廃棄物処理法 14条1項 | 東京都環境局 |
-| `kyoninka.kobutsu` | 古物商許可（営業所: 千代田区丸の内） | 古物営業法 3条 | 管轄警察署（丸の内署）経由 東京都公安委員会 |
+| ns | 法域 | 手続き | 根拠法 | 窓口 |
+|---|---|---|---|---|
+| `kyoninka.sanpai` | JPN | 産業廃棄物収集運搬業許可（東京都・積替え保管なし） | 廃棄物処理法 14条1項 | 東京都環境局 |
+| `kyoninka.kobutsu` | JPN | 古物商許可（営業所: 千代田区丸の内） | 古物営業法 3条 | 管轄警察署経由 東京都公安委員会 |
+| `kyoninka.gbr-waste-carrier` | GBR（England のみ） | 廃棄物運搬業登録 upper tier | COPA(A) 1989 s.1 + SI 2011/988 Part 8 | Environment Agency（GOV.UK オンライン） |
+| `kyoninka.gbr-scrap-metal` | GBR（England and Wales） | スクラップ金属業免許（site / collector） | Scrap Metal Dealers Act 2013 | 地方自治体（council） |
+| `kyoninka.deu-abfall-transport` | DEU | 廃棄物収集運搬（§53 届出 / §54 許可） | KrWG §53/§54 + AbfAEV | 州（Land）当局 |
+
+**収録できなかった値は書いていない。** 英国スクラップ金属と独の手数料は
+`:amount` を持たない —— 額を決めるのが手続きの外（council / 州）で、実測すると
+英国は £181〜£804.78（4 倍以上）、独は州ごとに幅で定められる。代表額を選べば
+残り全部で嘘になる。標準処理期間も、法にも公表にも決定期限が無い制度が 3 本ある。
+**空欄は手抜きではなく測定結果**で、`:verify` がその区別を持つ。
 
 ## 設計原則（正直さがコードの形をしている）
 
