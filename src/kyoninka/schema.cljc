@@ -46,9 +46,24 @@
    ;; ISO 3166-1 alpha-3。国より細かい単位（都道府県・州）は :procedure/window が
    ;; 持つ —— そちらは窓口であって法域ではないので、混ぜない。
    {:db/ident :procedure/jurisdiction :db/valueType :db.type/string :db/cardinality :db.cardinality/one}
+   ;; **法の適用範囲。** 昨日この schema は「国より細かい単位は `:procedure/window`
+   ;; が持つ」と決めたが、同じ docstring が「窓口は法域ではない」とも言っている。
+   ;; **GBR がその設計判断が最初に破れる法域になった**（実測 2026-08-07）:
+   ;; Scrap Metal Dealers Act 2013 の extent は England and Wales のみ、
+   ;; 廃棄物運搬業登録は England のみで、どちらも `"GBR"` の全域を覆わない。
+   ;; 窓口とは別の軸なので別属性にする。省略時は法域全域を意味する。
+   {:db/ident :procedure/extent :db/valueType :db.type/string :db/cardinality :db.cardinality/one}
    ;; **通貨中立の手数料。** `:procedure/fee-jpy` は型に JPY を焼いていたので、
    ;; 日本以外の手続きを収録した瞬間に嘘になる。金額と通貨を分ける。
+   ;; **最小単位の整数で持つ。** 昨日は素朴に `long` で「額」を宣言したが、
+   ;; GOV.UK の廃棄物運搬業登録は **£191.02** で整数ではない（実測 2026-08-07）。
+   ;; JPY は最小単位の端数を持たないので既存 2 本では顕在化しなかった ——
+   ;; **最初の非 JPY を収録した瞬間に破れる型**だった。
+   ;; 浮動小数で金額を持たないため、値は最小単位（pence / cent / 円）の整数にし、
+   ;; 1 通貨単位あたりの最小単位数を `:procedure/fee-minor-unit` で持つ
+   ;; （GBP/EUR は 100、JPY は 1）。
    {:db/ident :procedure/fee-amount :db/valueType :db.type/long :db/cardinality :db.cardinality/one}
+   {:db/ident :procedure/fee-minor-unit :db/valueType :db.type/long :db/cardinality :db.cardinality/one}
    {:db/ident :procedure/fee-currency :db/valueType :db.type/string :db/cardinality :db.cardinality/one}
    {:db/ident :procedure/fee-kind :db/valueType :db.type/keyword :db/cardinality :db.cardinality/one}
    {:db/ident :procedure/fee-verify :db/valueType :db.type/string :db/cardinality :db.cardinality/one}
@@ -65,6 +80,12 @@
    ;; sanpai は `:procedure/waste-categories`（産廃の品目）、kobutsu は
    ;; `:procedure/categories`（古物の区分）。同じ概念だが語彙が違うので統合せず
    ;; 両方宣言する —— 片方に寄せると、その手続きの用語ではない名前で保持することになる。
+   ;; **出所。** この library の原則は「捏造ゼロ・標準値には :verify」なのに、
+   ;; URL を持てる属性が 1 つも無く、出所が ns docstring とコメントにしか
+   ;; 無かった（3 本の非 JPN を書いた際に 3 者が独立に指摘）。
+   ;; `cloud-itonami-licensed-operator` は `:rule/url` を持っている ——
+   ;; data として query できないと、出所は「書いてあるが引けない」ままになる。
+   {:db/ident :procedure/source-urls :db/valueType :db.type/string :db/cardinality :db.cardinality/many}
    {:db/ident :procedure/waste-categories :db/valueType :db.type/keyword :db/cardinality :db.cardinality/many}
    {:db/ident :procedure/categories :db/valueType :db.type/keyword :db/cardinality :db.cardinality/many}
    ;; 複合値そのもの。datom 面へは下の 4 スカラに展開されるが、**library の

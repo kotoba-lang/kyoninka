@@ -18,6 +18,8 @@
                    ;; **通貨を型に焼かない。** 以前の schema は :procedure/fee-jpy で
                    ;; JPY を属性名に持っており、日本以外を収録した瞬間に嘘になった。
                    :currency "JPY"
+                   ;; JPY は最小単位の端数を持たないので minor-unit は 1。
+                   :minor-unit 1
                    :kind :新規許可申請手数料
                    :verify (schema/unverified "警視庁の公式ページ/管轄警察署で最新額を確認")}
    :procedure/standard-period-days {:value 40
